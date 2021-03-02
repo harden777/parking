@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>车库管理</title>
+    <!--css样式-->
+    <style>
+        .col-md-3 {
+            border-radius: 25px;
+            color: #fff;
+            text-align: center;
+            padding-bottom: 50px;
+        }
+
+        .col-md-3 img {
+            margin-top: 30px;
+        }
+
+        .two {
+            padding-top: 50px;
+            padding-bottom: 50px;
+            border: 1px solid #d3d3d3;
+            border-radius: 30px
+        }
+
+        .welcome {
+            padding: 10px 50px;
+            border-radius: 30px;
+            margin-top: 80px;
+            color: #37a;
+            background: #d3d3d3;
+            margin-bottom: 10px;
+        }
+
+        .icon {
+            height: 15px;
+            width: 15px;
+        }
+
+        .icon-text {
+            margin-left: 5px;
+            font-size: 12px;
+        }
+
+        .error {
+            color: #f40;
+        }
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=0">
+    <!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
+    <!-- 新 Bootstrap 核心 CSS 文件 -->
+    <link th:href="@{/bootstrap-3.3.7/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- <link
+             th:href="@{https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css}"
+             rel="stylesheet">-->
+    <!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
+    <script th:src="@{/js/jquery-3.4.1.min.js}" type="text/javascript"></script>
+    <!--
+        <script th:src="@{https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js}"></script>
+    -->
+
+    <!-- 引入表单校验jquery插件 -->
+    <script th:src="@{/js/jquery.validate.min.js}"
+            type="text/javascript"></script>
+
+    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+    <script th:src="@{/bootstrap-3.3.7/js/bootstrap.min.js}"></script>
+    <!--    <script
+                th:src="@{https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js}"></script>-->
+    <link rel="stylesheet" th:href="@{/css/userSetting.css}" type="text/css">
+    <!--引入layui-->
+    <link rel="stylesheet" th:href="@{/layui/css/layui.css}">
+    <script th:src="@{/layui/layui.js}" type="text/javascript"></script>
+</head>
+<body>
+<!--导航栏开始-->
+<div th:insert="/common/navbarModel::header"></div>
+
+<!--主体信息开始-->
+<div class="container">
+    <div class="row">
+        <div class="col-md-12 column">
+            <div class="welcome">
+                <h2 id="sta_name" th:text="${carStation.c_name}">&nbsp;车库车位管理</h2>
+
+            </div>
+        </div>
+    </div>
+    <div class="row">
+
+            <div class="panel panel-success">
+            <!-- Default panel contents -->
+            <div class="panel-heading">
+                <h3 th:text="${carStation.c_name}"></h3>
+                <input type="hidden" th:value="${carStation.c_id}" id="c_id">
+                <p>
+                    位置: <span th:text="${carStation.c_location}"></span> <br>
+                    描述: <span th:text="${carStation.c_description}"></span><br>
+                    车位总数: <span th:text="${carStation.c_total}" id="total"></span>&nbsp;&nbsp;
+                    车位价格:<span th:text="${carStation.c_price}"></span>元/<span th:text="${carStation.c_pricetime}"></span>小时
+                    <br>
+
+                    <br>
+                    <button style="background: #01AAED; color: white"  class="layui-btn layui-btn-sm"
+                            data-toggle="modal" data-target="#myModalUpdate" id="updateStation">修改车库信息
+                    </button>
+                    <button style="background: #00B51D; color: white" data-toggle="modal"
+                            data-target="#myModalAddCarspace" class="layui-btn layui-btn-sm" id="add_apcetotal">添加车库车位
+                    </button>
+
+                    <button class="layui-btn layui-btn-sm layui-btn-danger" id="delALl" lay-event="batchdel" data-type="getCheckData">
+                        <i class="layui-icon layui-icon-delete" style="font-size:20px;"></i> 批量删除</button>
+                </p>
+            </div>
+            <!-- Table -->
+            <table class="table" id="carSpace" lay-filter="carSpace"></table>
+
+
+        </div>
+
+    </div>
+</div>
+<div th:insert="/common/bottomModel::footer"> </div>
+
+<script type="text/html" id="caozuoListBar">
+    <button class="layui-btn layui-btn-sm layui-btn-radius layui-btn-warm" lay-event="del">删除</button>
+
+</script>
+
+
+<!--车位类型-->
+<script type="text/html" id="typeDemo">
+    {{#  if(d.s_type ==1){ }}
+    <button class="layui-btn layui-btn-normal layui-btn-sm" lay-event="minCar">小车位</button>
+
+    {{# }if(d.s_type ==2) { }}
+    <button class="layui-btn layui-btn layui-btn-sm" lay-event="maxCar">大车位</button>
+
+    {{#  } }}
+</script>
+<!--车位状态-->
+<script type="text/html" id="stateDemo">
+    {{#  if(d.s_state ==0){ }}
+    <p style="color: green"> 无车</p>
+    {{# }if(d.s_state ==1) { }}
+    <p style="color: red"> 有车</p>
+
+    {{#  } }}
+</script>
+<script type="text/javascript">
+    $(function (){
+        layui.use('table',function (){
+            var c_id=$("#c_id").val();
+            var table =layui.table;
+            var layer=layui.layer;
+            var tableIns=table.render({
+                elem: '#carSpace'
+                ,id:'carSpaceTab'
+                ,url: '/space/carSpaceList?c_id='+c_id //数据接口
+                ,page: true //开启分页
+                ,limits:[10,15,20,25]
+                ,limit:10
+               /* ,parseData:function (result){   //解析数据
+                    return{
+                        "code":0,
+                        "msg":result.message,
+                        "data":result.data
+                    }
+                }*/
+                ,cols: [
+                    [ //表头
+                        {type:'checkbox'} //开启复选框
+                        ,{field: 's_id', title: 'ID', width:80, sort: true, fixed: 'left',align:'center'}//fixed在最左边显示，sort是否支持逆排序
+                        ,{field: 's_name', title: '车位名称', width:150,align:'center'}
+                        ,{field: 's_code', title: '车位码', width:150,align:'center'}
+                        ,{field: 'carStation.c_location', title: '位置', width:180,align:'center',templet: function (d){  //获取对象数据
+                            return d.carStation.c_location;
+                        }}
+                        ,{field: 'carStationprice', title: '车位价格', width: 150, align:'center',templet: function (d){ //自定义列信息
+                            return d.carStation.c_price+"元/"+d.carStation.c_pricetime+"小时";
+                        }  }
+                        ,{field: 's_type', title: '类型', toolbar:'#typeDemo', width:150,align:'center'}
+                        ,{field: 's_state', title: '状态', toolbar:'#stateDemo',width:120,align:'center'}
+                        ,{field: 'c_total', title: '车位总数', width:120,align:'center',templet: function (d){ //自定义列信息
+                         return d.carStation.c_total; } }
+                        ,{title:'操作',align:'center',templet:'#caozuoListBar',width:180}
+                    ]
+                ],done:function(res, curr, count) {
+                    $("[data-field='s_id']").css('display','none');//隐藏id
+                    $("[data-field='c_total']").css('display','none');//隐藏id
+                    console.log(res.data);
+                }
+            })//table.render
+
+            //表格事件
+            table.on('tool(carSpace)',function (obj){
+                var layEvent=obj.event;
+                data=obj.data;
+
+                //修改车位类型
+                if (layEvent=='minCar'||layEvent=='maxCar') {
+                    var s_type=data.s_type-1;
+                    var title="小车位";
+                    if (layEvent=='minCar'){
+                        title="大车位";
+                        s_type=data.s_type+1;
+                    }
+                    layer.confirm('确定修改为'+title+'?',{icon:3, title:'修改车位类型'},function(index){
+                        $.ajax({
+                            url:'/space/updateS_type',
+                            data:{
+                                's_type':s_type,
+                                's_id':data.s_id
+                            },
+                            dataType:'json',
+                            type:'post',
+                            success:function (dataJson){
+                                if(dataJson>=1){
+                                    layer.msg('修改成功',{icon:6,offset:"auto",time:2000});//{icon:6,offset:"auto",time:2000}  弹出框样式
+                                    tableIns.reload({
+                                        page:{
+                                            curr:1
+                                        }
+                                    })
+                                    layer.closeAll(index);
+                                }else {
+                                    layer.msg('修改失败',{icon:5,offset:"auto",time:2000});
+                                    layer.closeAll(index);
+
+                                }
+                            },
+                            fail:function (){
+                                layer.msg('fail',{icon:5,offset:"auto",time:2000});
+                                layer.closeAll(index);
+                            },
+                            error:function (){
+                                    layer.msg('error',{icon:5,offset:"auto",time:2000});
+                                    layer.closeAll(index);
+
+                            }
+
+                        })
+                    })
+                }
+                else if (layEvent=='del'){  //删除单个车位
+                    var checkS_state=data.s_state;
+                    if(checkS_state!=1){
+                        layer.confirm('确定删除车位?',{icon:3, title:'删除车位'},function(index) {
+                            $.ajax({
+                                url: "/space/delSpace",
+                                dataType: 'json',
+                                data: {
+                                    "s_id": [data.s_id],
+                                    "c_total":data.carStation.c_total,
+                                    "c_id":data.carStation.c_id
+                                },
+                                traditional:true,  //传递数组需要，先使用 tradititonal 格式化:
+                                type: 'post',
+                                success: function (data) {
+                                    if (data >= 1) {
+                                        layer.msg('删除成功！', {icon: 6, offset: "auto", time: 1500});//提示框
+                                      /*  document.write("<form action='/space/details' method=post name=manageDepForm style='display:none'>");
+                                        document.write("<input type=hidden name='c_id'  value='"+c_id+"'/>");//参数1
+                                        document.write("</form>");
+                                        document.manageDepForm.submit();*/
+                                        //   window.location.reload(); 可代替上面的方法
+                                        setTimeout(function () {
+                                            window.location.reload();
+                                        },1500);
+                                    } else {
+                                        layer.msg('删除失败！', {icon: 5, offset: "auto", time: 2000});//提示框
+                                        layer.closeAll(index);
+                                    }
+
+                                },error:function (e){
+                                    layer.msg('error')
+                                }
+                            })
+                        }); //layer.confirm
+                    }//if
+                    else {
+                        layer.msg('该车位有车，请先挪走',{icon:0,time:1000});
+                        tableIns.reload();
+                    }
+
+                }
+
+
+                })// table.on
+
+            //批量删除
+            active = {
+                getCheckData: function(){ //获取选中数据
+
+                    var checkStatus = table.checkStatus('carSpaceTab')  //carSpaceTab table的id属性
+                        ,checkData = checkStatus.data,
+                        delList=[];
+                        var c_total=checkData[0].carStation.c_total; //获取车位总数
+                        var c_id=checkData[0].carStation.c_id;  //修改车库总数和删除成功后，重定向页面参数
+                        var checkS_state=0;
+
+                    for (var i = 0; i < checkData.length; i++) {  //当该车位有车时不允许删除 1为有车
+                        if (checkData[i].s_state==1){
+                            checkS_state=checkData[i].s_state;
+                            layer.msg('该车位有车，请先挪走',{icon:0,time:1000});
+                            tableIns.reload();
+                            break;
+
+                        }
+                    }
+
+                    if(checkS_state!=1){
+                        layer.confirm('确定删除车位?',{icon:3, title:'删除车位'},function(index) {
+                            for (var i = 0; i < checkData.length; i++) {
+                                delList.push(checkData[i].s_id);
+                              //  var strify = JSON.stringify(delList);
+                            }
+                            console.log(delList);
+                            $.ajax({
+                                url: "/space/delSpace",
+                                dataType: 'json',
+                                data: {
+                                    "s_id": delList,
+                                    "c_total":c_total,
+                                    "c_id":c_id
+                                },
+                                traditional:true,  //传递数组需要，先使用 tradititonal 格式化:
+                                type: 'post',
+                                success: function (data) {
+                                    if (data >= 1) {
+                                        layer.msg('删除成功！', {icon: 6, offset: "auto", time: 1500});//提示框
+                                     /*   document.write("<form action='/space/details' method=post name=manageDepForm style='display:none'>");
+                                        document.write("<input type=hidden name='c_id'  value='"+c_id+"'/>");//参数1
+                                        document.write("</form>");
+                                        document.manageDepForm.submit();*/
+                                        setTimeout(function () {
+                                            window.location.reload();
+                                        },1500);
+
+
+                                    } else {
+                                        layer.msg('删除失败！', {icon: 5, offset: "auto", time: 2000});//提示框
+                                        setTimeout(function () {
+                                            layer.closeAll(index);
+                                        },1500);
+                                    }
+
+                                },error:function (e){
+                                    layer.msg('error')
+                                }
+                            })
+                        }); //layer.confirm
+                    }//if
+
+                }
+            };
+            //监听点击
+            $('#delALl').on('click', function(){
+                var type = $(this).data('type');
+                active[type] ? active[type].call(this) : '';
+            });
+            //监听表格复选框选择
+            table.on('checkbox(carSpace)', function(obj){
+            })
+
+            //点击修改车库按钮先清空表单
+            $('#updateStation').click(function (){
+                $('#edit_carstationInfo')[0].reset();
+
+            })
+            //修改车库信息
+            $("#edit_carstationInfo").validate({
+                rules: {
+                    "name": {
+                        "required": true,
+                        "rangelength": [2, 12],
+                    },
+                    "location": {
+                        "required": true,
+                    },
+                    "price": {
+                        "required": true,
+                        "number": true,
+                        "min": 0.01
+                    },
+                    "time": {
+                        "required": true,
+                        "number": true,
+                        "min": 0.01
+                    }
+                },
+                messages: {
+                    "name": {
+                        "required": "车库名称不能为空",
+                        "rangelength": "车库名称长度为2-12位",
+                    },
+                    "location": {
+                        "required": "位置描述不能为空"
+                    },
+                    "price": {
+                        "required": "价格不能为空",
+                        "number": "价格为整数或小数",
+                        "min": "最小为0.01"
+                    },
+                    "time": {
+                        "required": "时间不能为空",
+                        "number": "时间为整数或小数",
+                        "min": "最小为0.01"
+                    }
+                },
+                submitHandler: function (form) {
+
+
+                    layer.confirm('确定要修改车库信息吗?',{icon:3, title:'修改车库信息'},function (){
+
+                        $.ajax({
+                            async: true,
+                            url: "/car/updateCarstation",
+                            data: {
+                                "c_id": $("#edit_id").val(),
+                                "c_name": $("#edit_name").val(),
+                                "c_location": $("#edit_location").val(),
+                                "c_description": $("#edit_description").val(),
+                                "c_price": $("#edit_price").val(),
+                                "c_time": $("#edit_time").val(),
+                                "total":$('#total').text()
+
+                            },
+                            type: "POST",
+                            dataType:'json',
+                            success: function (data) {
+                                if (data >= 1) {
+                                    layer.msg('修改车库信息成功',{icon: 6, offset: "auto", time: 1500});
+                                    setTimeout(function () {
+                                        window.location.reload();
+                                    },1500);
+                                } else {
+                                    layer.msg('修改车库信息失败',{icon: 5, offset: "auto", time: 2000})
+                                }
+                                $("#myModalUpdate").modal('hide');
+                            },
+                            fail: function (e) {
+                                layer.msg('fail')
+                            },
+                            error: function (e) {
+                                layer.msg('error')
+                            }
+                        })//ajax
+                    })//layer.comfirm
+                }
+
+            })
+
+
+            //点击添加车位按钮先清空表单
+            $('#add_apcetotal').click(function (){
+                $('#add_carspaceInfo')[0].reset();
+            })
+            //添加车位
+            $("#add_carspaceInfo").validate({
+                rules: {
+                    "add_total": {
+                        "required": true,
+                        "digits":true
+                    }
+                },
+                messages: {
+
+                    "add_total": {
+                        "required": "总数不能为空",
+                        "digits":"必须输入整数"
+                    }
+                },
+                submitHandler: function (form) {
+                    layer.confirm('确定要添加车位?',{icon:3, title:'添加车位'},function (){
+                        $.ajax({
+                            async: true,
+                            url: "/space/addSpaceTotal",
+                            data: {
+                                "c_id": $("#carstation_c_id").val(),
+                                "c_total": $("#carstation_c_total").val(),
+                                "add_total": $("#add_total").val(),
+                                "add_type": $("#add_type").val(),
+                                "c_name":$('#sta_name').text(),
+                                "total":$('#total').text()
+
+                    },
+                            type: "POST",
+                            dataType:'json',
+                            success: function (data) {
+                                if (data >= 1) {
+                                    layer.msg('添加成功',{icon: 6, offset: "auto", time: 2000});
+
+                                    setTimeout(function () {
+                                        window.location.reload();
+                                    },1500);
+                                } else {
+                                    layer.msg('添加失败',{icon: 6, offset: "auto", time: 2000})
+                                }
+                                $("#myModalAddCarspace").modal('hide');
+                            },
+                            fail: function (e) {
+                                layer.msg('fail')
+                            },
+                            error: function (e) {
+                                layer.msg('error')
+                            }
+                        })//ajax
+                    })//layer.comfirm
+                }
+
+            })
+
+        });//layui.use
+    })
+
+
+
+
+
+</script>
+
+<!--添加车位-->
+<div class="modal fade" id="myModalAddCarspace" tabindex="-1"
+     role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"
+                        aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="addSpaceTotal">添加车位</h4>
+            </div>
+
+            <div class="modal-body">
+                <form class="form-horizontal" id="add_carspaceInfo">
+                    <div style="display: none">
+                        <input   type="hidden" id="carstation_c_id" th:value="${carStation.c_id}"/>
+                        <input   type="hidden" id="carstation_c_total" th:value="${carStation.c_total}"/>
+                    </div>
+                    <div class="form-group">
+                        <label for="c_name" class="col-sm-2 control-label">车库名称</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" id="c_name"
+                                 th:value="${carStation.c_name}"  readonly="readonly" name="c_name"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="add_total" class="col-sm-2 control-label">车位数量</label>
+                        <div class="col-sm-2">
+                            <input type="text" class="form-control" id="add_total"
+                                     name="add_total"/>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="add_type" class="col-sm-2 control-label">车位类型</label>
+                        <div class="col-sm-6">
+                            <select class="form-control" id="add_type" name="add_type">
+                                <option value="1" selected="selected">小车位</option>
+                                <option value="2" >大车位</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default"
+                                data-dismiss="modal">关闭
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="addtotal">添加</button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!--修改车库-->
+<div class="modal fade" id="myModalUpdate" tabindex="-1" role="dialog"
+     aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"
+                        aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="updateCarStation">修改车库信息</h4>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <p style="color: red; font-size: 5px">*注意：车位价格修改后，所有车位价格都将修改</p>
+                </div>
+                <form class="form-horizontal" id="edit_carstationInfo">
+                    <div style="display: none">
+                        <input th:value="${carStation.c_id}" id="edit_id"/>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_name" class="col-sm-2 control-label">名称</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" id="edit_name"
+                                   th:value="${carStation.c_name}" name="name"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_location" class="col-sm-2 control-label">位置</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" id="edit_location"
+                                   th:value="${carStation.c_location}" name="location"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_description" class="col-sm-2 control-label">描述</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" id="edit_description"
+                                   th:value="${carStation.c_description} " name="description"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_price" class="col-sm-2 control-label">车位价格</label>
+                        <div class="col-sm-2">
+                            <input type="text" class="form-control" id="edit_price"
+                                   th:value="${carStation.c_price}" name="price"/>
+                        </div>
+                        <div class="col-sm-2">元/每</div>
+                        <div class="col-sm-2">
+                            <input type="text" class="form-control" id="edit_time"
+                                   th:value="${carStation.c_pricetime }" name="time"/>
+                        </div>
+                        小时
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default"
+                                data-dismiss="modal">关闭
+                        </button>
+                        <button type="submit" class="btn btn-primary"
+                                id="updateUserInfoBtn">修改
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

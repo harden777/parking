@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>出入记录</title>
+    <!--css样式-->
+    <meta name="viewport" content="width=device-width, initial-scale=0">
+
+    <!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
+    <!-- 新 Bootstrap 核心 CSS 文件 -->
+    <link th:href="@{/bootstrap-3.3.7/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- <link
+             th:href="@{https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css}"
+             rel="stylesheet">-->
+
+    <!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
+    <script th:src="@{/js/jquery-3.4.1.min.js}" type="text/javascript"></script>
+
+
+    <!-- <script th:src="@{https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js}"></script>
+-->
+
+    <!-- 引入表单校验jquery插件 -->
+    <script th:src="@{/js/jquery.validate.min.js}"
+            type="text/javascript"></script>
+
+    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+    <script th:src="@{/bootstrap-3.3.7/js/bootstrap.min.js}"></script>
+    <!--    <script
+                th:src="@{https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js}"></script>-->
+    <link rel="stylesheet" th:href="@{/css/userSetting.css}" type="text/css">
+    <!--引入layui-->
+    <link rel="stylesheet" th:href="@{/layui/css/layui.css}">
+    <script th:src="@{/layui/layui.js}" type="text/javascript"></script>
+
+
+
+
+
+</head>
+<body>
+<!--导航栏开始-->
+<div th:insert="/common/navbarModel::header"></div>
+
+<div class="container-fluid">
+    <div class="row">
+
+        <div class="panel panel-success">
+            <!-- Default panel contents -->
+            <div class="panel-heading" style="height: 70px">
+
+            </div>
+            <!-- Table -->
+            <table id="records" lay-filter="records" class="table"> </table>
+
+
+        </div>
+
+    </div>
+</div>
+
+<div th:insert="/common/bottomModel::footer"> </div>
+
+<script type="text/html" id="caozuoListBar">
+    <button class="layui-btn layui-btn-sm layui-btn-radius layui-btn-danger" lay-event="del">删除</button>
+</script>
+
+
+
+<script type="text/html" id="stateDemo">
+    {{#  if(d.state ==0){ }}
+    <p style="color: green"> 未出库</p>
+    {{# }if(d.state ==1) { }}
+    <p style="color: red"> 已出库</p>
+
+    {{#  } }}
+</script>
+<script type="text/html" id="source">
+    {{#  if(d.is ==0){ }}
+    <p style="color: red"> 校外</p>
+
+    {{# }if(d.is ==1) { }}
+    <p style="color: green">校内 </p>
+
+    {{#  } }}
+</script>
+<script type="text/javascript">
+    $(function () {
+            layui.use('table', function () {
+                var table = layui.table;
+                var layer = layui.layer;
+                var tableIns = table.render({
+                    elem: '#records'
+                    , id: 'recordsTab'
+                    , url: '/order/recordList' //数据接口
+                    , page: true //开启分页
+                    , limits: [10, 15, 20, 25]
+                    , limit: 10
+                ,parseData:function (result){   //解析数据
+                        return{
+                            "code":0,
+                            "msg":result.message,
+                            "data":result.data,
+                            "count":result.count,
+                        }
+                    }
+                    , cols: [
+                        [ //表头
+                           // {type: 'checkbox'} //开启复选框
+                             {title: '操作', align: 'center', templet: '#caozuoListBar', width: 80}
+
+                            ,{field: 'id', title: 'ID', width: 80, align: 'center'}
+                            , {field: 'province', title: '车牌', width: 120, align: 'center', templet: function (d) {  //获取对象数据
+                                return d.province+"·"+d.carNumber;}}
+                            , {field: 'customerName', title: '客户姓名', width: 100, align: 'center'}
+                            , {field: 'customerPhone', title: '客户电话', width: 120, align: 'center'}
+                            , {field: 'startTime', title: '入库时间', width: 160, align: 'center', templet: function (d) {
+                                return  format("yyyy-MM-dd HH:mm:ss",d.startTime);}}
+                            , {field: 'endTime', title: '出库时间', width: 160, align: 'center', templet: function (d) {
+                                return  format("yyyy-MM-dd HH:mm:ss",d.endTime);}}
+                            , {field: 'time', title: '停车时长', width: 120, align: 'center', templet: function (d) {  //获取对象数据
+                              return d.time+"小时";}}
+                            , {field: 'cost', title: '停车费用', width: 120, align: 'center', templet: function (d) {  //获取对象数据
+                                return d.cost+"元";}}
+                            , {field: 'c_price', title: '车位价格', width: 120, align: 'center', templet: function (d) {
+                                if (d.carSpace!=null){
+                                    return d.carSpace.carStation.c_price + "元/" + d.carSpace.carStation.c_pricetime + "小时";
+                                }
+                                return "";
+
+                            }}
+                            , {field: 'state', title: '状态', width: 80, align: 'center',toolbar: '#stateDemo'}
+                            , {field: 'cid', title: '车库', width: 120, align: 'center', templet: function (d) {  //获取对象数据
+                                if (d.carSpace!=null){
+                                    return d.carSpace.carStation.c_name;
+                                }
+                                return "";
+                            }}
+                            , {field: 'sid', title: '车位', width: 140, align: 'center', templet: function (d) {  //获取对象数据
+                                if (d.carSpace!=null){
+                                    return d.carSpace.s_name;
+                                }
+                                return "";
+
+                            }}
+                            , {field: 'uid', title: '操作员', width: 80, align: 'center', templet: function (d) {  //获取对象数据
+                                if (d.user!=null){
+                                    return d.user.code;
+                                }
+                                return "";
+                            }}
+                            , {field: 'is', title: '来源', width: 80, align: 'center',toolbar: '#source'}
+                        ]
+                    ], done: function (res, curr, count) {
+                       $("[data-field='id']").css('display', 'none');//隐藏id
+                    }
+                });//table.render
+
+                //表格事件
+                table.on('tool(records)',function (obj) {
+                    var layEvent = obj.event;
+                    data = obj.data;
+                    if (layEvent=='del'){  //删除单个车位
+                        var checkS_state=data.state;
+                        if(checkS_state==1){
+                            layer.confirm('确定删除车位?',{icon:3, title:'删除车位'},function(index) {
+                                $.ajax({
+                                    url: "/order/delOrder",
+                                    dataType: 'json',
+                                    data: {
+                                        "id": data.id
+                                    },
+                                    type: 'post',
+                                    success: function (data) {
+                                        if (data >= 1) {
+                                            layer.msg('删除成功！', {icon: 6, offset: "auto", time: 1000});//提示框
+                                            setTimeout(function () {
+                                                window.location.reload();
+                                            },1000);
+                                        } else {
+                                            layer.msg('删除失败！', {icon: 5, offset: "auto", time: 2000});//提示框
+                                            layer.closeAll(index);
+                                        }
+
+                                    },error:function (e){
+                                        layer.msg('error')
+                                    }
+                                })
+                            }); //layer.confirm
+                        }//if
+                        else {
+                            layer.msg('该车未出库，不能删除',{icon:0,time:1000});
+                        }
+
+                    }
+
+
+                });
+
+
+            });
+        //date数据类型格式转换
+        var format = function (format, time) {
+                   var t = new Date(time);
+                 //将不住两位的在前面加零
+                   var tf = function (i) {
+                         return (i < 10 ? '0' : '') + i
+                     };
+                  return format.replace(/yyyy|MM|dd|HH|mm|ss/g, function (a) {
+                         switch (a) {
+                                case 'yyyy':
+                                         return tf(t.getFullYear());
+                                          break;
+                                      case 'MM':
+                                        return tf(t.getMonth() + 1);
+                                            break;
+                                    case 'mm':
+                                          return tf(t.getMinutes());
+                                         break;
+                                   case 'dd':
+                                         return tf(t.getDate());
+                                          break;
+                                      case 'HH':
+                                           return tf(t.getHours());
+                                         break;
+                                    case 'ss':
+                                         return tf(t.getSeconds());
+                                         break;
+                                  }
+                     })
+             }
+    })
+
+</script>
+</body>
+</html>

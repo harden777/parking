@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en"  xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>员工管理</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=0">
+
+    <!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
+    <!-- 新 Bootstrap 核心 CSS 文件 -->
+    <link th:href="@{/bootstrap-3.3.7/css/bootstrap.min.css}" rel="stylesheet">
+   <!-- <link
+            th:href="@{https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css}"
+            rel="stylesheet">-->
+
+    <!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
+  <script th:src="@{/js/jquery-3.4.1.min.js}" type="text/javascript"></script>
+
+  <!--  <script th:src="@{https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js}"></script>-->
+
+    <!-- 引入表单校验jquery插件 -->
+    <script th:src="@{/js/jquery.validate.min.js}"
+            type="text/javascript"></script>
+
+    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+    <script th:src="@{/bootstrap-3.3.7/js/bootstrap.min.js}"></script>
+<!--    <script
+            th:src="@{https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js}"></script>-->
+    <link rel="stylesheet" th:href="@{/css/userSetting.css}" type="text/css">
+    <!--引入layui-->
+    <link rel="stylesheet" th:href="@{/layui/css/layui.css}">
+    <script th:src="@{/layui/layui.js}" type="text/javascript"></script>
+    <script th:src="@{/js/validators.js}" type="text/javascript"></script>
+
+
+</head>
+<body>
+<div th:insert="/common/navbarModel::header"></div>
+<!--主体信息开始-->
+<!--搜索用的-->
+<div class="container top"
+     style="margin-top: 80px; height: 60px; background: #f5f5f5;">
+    <div class="row" style="margin-left: 20px; margin-top: 10px">
+        <form class="form-inline"
+              action="">
+            <div class="form-group">
+                <label for="code">工号：</label> <input type="text"
+                                                                  class="form-control" id="code"
+                                                                  name="code"
+                                                                  placeholder="请输入工号">
+            </div>
+            <div class="form-group">
+                <label for="username">帐号：</label> <input type="text"
+                                                                  class="form-control" id="username"
+                                                                  name="username"
+                                                                  placeholder="请输入账号">
+            </div>
+            <div class="form-group">
+                <label for="name">姓名：</label> <input type="text"
+                                                                   class="form-control" id="name"
+                                                                   name="name"
+                                                                   placeholder="请输入姓名">
+            </div>
+            <button type="button" class="btn btn-info"
+                    id="reset" style="background:#01AAED;width: 80px">重置
+            </button>
+            <button type="button" class="btn btn-success"
+                     id="check" style="background: #4cae4c;width: 80px">查询
+            </button>
+            <button type="button" class="btn btn-danger"
+                    style="background: #d43f3a;width: 120px" data-toggle="modal"
+                    data-target="#myModalAddUser" id="addUser"
+                   >添加员工
+            </button>
+        </form>
+
+    </div>
+</div>
+<div class="container main" style="margin-top: 10px; height: 450px">
+    <div class="row">
+        <table id="employs" lay-filter="employs"> </table>
+
+    </div>
+
+</div>
+
+<div th:insert="/common/bottomModel::footer"> </div>
+
+<script type="text/html" id="caozuoListBar">
+    <button class="layui-btn layui-btn-sm layui-btn-radius layui-btn-warm" lay-event="uppassword">修改密码</button>
+    <button class="layui-btn layui-btn-sm layui-btn-radius layui-btn-danger" lay-event="del">删除</button>
+
+</script>
+
+<script type="text/html" id="stateDemo">
+    {{#  if(d.state ==0){ }}
+    <a class="layui-btn layui-btn-disabled layui-btn-sm" lay-event="disable">禁用</a>
+
+    {{# }if(d.state ==1) { }}
+    <a class="layui-btn layui-btn-sm" lay-event="available">可用</a>
+
+    {{#  } }}
+</script>
+
+<script type="text/html" id="typeDemo">
+    {{#  if(d.type ==0){ }}
+    <a class="layui-btn layui-btn-normal layui-btn-sm" lay-event="emps">职员</a>
+
+    {{# }if(d.type ==1) { }}
+    <a class="layui-btn layui-btn-warm layui-btn-sm" lay-event="manage">管理</a>
+
+    {{#  } }}
+</script>
+
+
+<script type="text/javascript">
+    layui.use('table',function (){
+        var $=layui.$;
+        var table=layui.table;
+        var tableIns=table.render({
+            elem: '#employs'
+            ,id:'employcheck'
+            ,height: 500
+            ,url: '/admin/employDate' //数据接口
+            ,page: true //开启分页
+            ,limits:[5,10,15,20]
+            ,limit:10
+            ,cols: [
+                [ //表头
+                    ,{field: 'id', title: 'ID', width:80, sort: true, fixed: 'left',align:'center'}
+                    ,{field: 'code', title: '工号', width:80,align:'center'}
+                    ,{field: 'username', title: '账号', width:160,align:'center'}
+                    ,{field: 'name', title: '姓名', width:120,align:'center'}
+                    ,{field: 'sex', title: '性别', width:80,align:'center'}
+                    ,{field: 'email', title: '邮箱', width: 200}
+                    ,{field: 'type', title: '权限', width: 100,align:'center',toolbar:'#typeDemo'}
+                    ,{field: 'state', title: '状态',toolbar:'#stateDemo', width: 100,align:'center'}
+                    ,{title:'操作',align:'center',templet:'#caozuoListBar',width:240}
+
+                ]
+            ],done:function(res, curr, count) {
+                $("[data-field='sex']").children().each(function (i,obj) {
+                    if ($(this).text() == '1') {
+                        $(this).text('男');
+                    }else if ($(this).text() == '0') {
+                        $(this).text("女" )
+                    }
+                });
+                $("[data-field='id']").css('display','none');//隐藏id
+
+            }
+
+        });
+
+    table.on('tool(employs)',function (obj){ //employs 是 table 原始容器的属性 lay-filter="对应的值"
+       var layEvent=obj.event;
+       data=obj.data;
+       //修改状态
+       if (layEvent=='available'||layEvent=='disable'){
+           layer.confirm('确定修改此用户状态？',{icon:3, title:'修改状态'},function(index){
+               $.ajax({
+                   url:"/admin/editstate",
+                   data:{"id":data.id,
+                        "state":data.state
+                   },
+                   dataType:"json",
+                   type:"POST",
+                   success:function(datajson){
+                       if(datajson.code==1){
+                           layer.msg(datajson.msg)
+                           tableIns.reload();
+                           layer.close(index);
+                       }else{
+                           layer.msg(datajson.msg);
+                       }
+                   }
+               })
+           });
+       }
+            //修改权限
+       else if(layEvent=='emps'||layEvent=='manage'){
+           layer.confirm('确定修改此用户权限？',{icon:3, title:'修改权限'},function(index){
+               $.ajax({
+                   url:"/admin/edittype",
+                   data:{"id":data.id,
+                       "type":data.type
+                   },
+                   dataType:"json",
+                   type:"POST",
+                   success:function(datajson){
+                       if(datajson.code==1){
+                           layer.msg(datajson.msg)
+                           tableIns.reload();
+                           layer.close(index);
+                       }else{
+                           layer.msg(datajson.msg);
+                       }
+                   }
+               })
+           });
+       }
+        //删除用户
+       else if (layEvent=='del'){
+           layer.confirm('确定删除此用户？',{icon:3, title:'删除用户'},function(index){
+               $.ajax({
+                   url:"/admin/deleteuser",
+                   data:{"id":data.id
+                   },
+                   dataType:"json",
+                   type:"POST",
+                   success:function(datajson){
+                       if(datajson.code==1){
+                           layer.msg(datajson.msg)
+                           tableIns.reload({
+                               page: {
+                                   curr: 1 //重新从第 1 页开始
+                               }
+                           });
+                           layer.close(index);
+                       }else{
+                           layer.msg(datajson.msg);
+                       }
+                   }
+               })
+           });
+       }
+       //修改密码
+       else if(layEvent=='uppassword'){
+           //清空表单的值
+           $('#uppassword').val('');
+           $('#reuppassword').val('');
+
+           layui.use('form',function(){
+
+               var form = layui.form;
+
+               layer = layui.layer;
+
+               layer.open({
+                   type: 1,
+                   title: '修改密码', //不显示标题栏
+                   scrollbar:false,
+                   closeBtn:false,
+                   area: ['400px','300px'],
+                   shade: 0.8,
+                   id: 'LAY_layuipro', //设定一个id，防止重复弹出
+                   resize: false, //是否允许拉伸
+                   btn: ['立即提交', '取消'],
+                   btnAlign: 'c', //按钮居中对齐 r右 c中 l左
+                   moveType: 1 //拖拽模式，0或者1
+                   ,
+                   content: $(".pop"),  //类选择器，加载出表单
+                   success: function (layero,index) {
+                       $(':focus').blur();
+                       // 添加form标识
+                       layero.addClass('layui-form');
+                       // 将保存按钮改变成提交按钮
+                       layero.find('.layui-layer-btn0').attr({
+                           'lay-filter': 'formDemo',
+                           'lay-submit': ''
+                       });
+                       //var body = layui.layer.getChildFrame('body', index);
+                       //console.log(body);
+                       if(data) {
+                          $("#upcode").val(data.code);
+                           form.render();
+
+                       }
+                   },
+                   yes: function (layero, index) {
+                       form.on('submit(formDemo)', function (data) {
+                           //表单数据formData
+                           var formData = data.field;
+                           $.ajax({
+                               "url":'/admin/editpassword',
+                               "data": formData,
+                               "type": "POST",
+                               "success": function (dataJson) {
+                                   if (dataJson>=1){
+                                       layer.msg("修改成功");
+
+                                       setTimeout(function () {
+                                           tableIns.reload();
+                                           layer.closeAll();
+                                       },1500);
+                                   }else {
+                                       layer.msg("修改失败");
+
+                                       setTimeout(function () {
+                                           layer.closeAll();
+                                       },1500);
+
+                                   }
+                               },
+                               "error": function (data) {
+                                   layer.msg("修改失败");
+                                   setTimeout(function () {
+                                       layer.closeAll();
+                                   },1500);
+                               }
+                           })
+                           return false;
+                       });
+                   },
+               });
+               //密码长度验证
+               form.verify({
+                   lengths:function(value){
+                       if($('input[name=uppassword]').val().length<3||$('input[name=uppassword]').val().length>12)
+                           return '密码长度为3到12个字符';
+                   }
+               });
+
+               // 确认密码是否一致
+               form.verify({
+                   confirmPass:function(value){
+                       if($('input[name=uppassword]').val() !== value)
+                           return '两次密码输入不一致！';
+                   }
+               });
+           });//
+       }
+
+    });
+
+
+        //重置按钮
+        $('#reset').on('click',function (){
+            $('#code').val('');
+            $('#name').val('');
+            $('#username').val('');
+
+            tableIns.reload({
+                page: {
+                    curr: 1 //重新从第 1 页开始
+                }
+                , where: {
+                    code: $('#code').val(),//逗号隔开
+                    username: $('#username').val(),
+                    name: $('#name').val()//逗号隔开
+                }
+            },'data');
+
+        });
+
+        //查询按钮
+        $('#check').on('click',function () {
+
+            table.reload('employcheck', {//employcheck table的id
+                page: {
+                    curr: 1 //重新从第 1 页开始
+                }
+                , where: {
+                    //将条件查询数据传给后台
+                    code: $('#code').val(),//逗号隔开
+                    username: $('#username').val(),
+                    name: $('#name').val()//逗号隔开
+                }
+            }, 'data');
+
+
+
+        });
+        //添加员工
+        $('#addUser').on('click',function (){
+            //清空form表单
+            $('#edit_userInfo')[0].reset();
+            layui.use('layer',function (){
+                $("#edit_userInfo").validate({ //表单验证
+                   rules: {
+                        "username": {//绑定的是表单name属性,非id
+                            "required": true,
+                            "rangelength": [3, 12],
+                            "typename":true,
+                            "check2Username":true
+                        },
+                        "code": {
+                            "required": true,
+                            "digits":true,
+                            "rangelength": [5,5],
+                            "checkCode2":true
+                        },
+                        "name": {
+                            "required": true,
+                            "rangelength": [2,12]
+
+                        },
+
+                        "phone": {
+                            "required": true,
+                            "isMobile":true
+
+                        },
+                        "email": {
+                            "required": true,
+                            //jquery自带检验邮箱 "email":true
+                            "isEmail":true //自定义邮箱验证
+                        },
+
+                    },
+                    messages: {
+                        "username": {
+                            "required": "用户名不能为空",
+                            "rangelength": "用户名长度为3-12位",
+                            "check2Username":"用户名已存在，请重新输入",
+                            "typename":"请输入字符，不含中文"
+                        },
+                        "code": {
+                            "required": "工号不能为空",
+                            "digits":"请输入数字",
+                            "rangelength": "工号长度为5位数字",
+                            "checkCode2":"工号已存在，请重新输入"
+
+                        },
+                        "name": {
+                            "required": "昵称不能为空",
+                            "rangelength": "昵称为2到12个字符"
+                        },
+                        "phone": {
+                            "required": "电话不能为空",
+                            // "isMobile":"请正确输入手机号"  //自定义函数写了错误提示，这里可不写
+
+                        },
+                        "email": {
+                            "required": "邮箱不能为空",
+                            "isEmail":"请输入正确的邮箱格式"
+
+                        },
+
+                    },
+                    submitHandler: function (form) {  //表单验证通过执行函数
+
+                        // if (confirm('确定要提交已编辑的信息吗?')) {
+                        $.ajax({
+                            type: 'post',
+                            url: "/user/register",
+                            data: {
+                                "username": $("#edit_username").val(),
+                                "code": $("#edit_code").val(),
+                                "name": $("#edit_name").val(),
+                                "sex": $("#sex").val(),
+                                "email": $("#edit_email").val(),
+                                "phone": $("#edit_phone").val(),
+                                "say":$("#edit_say").val()
+                            },
+                            dataType: 'json',
+                            async: true,
+                            success: function (data) {
+
+                                if (data >= 1) {
+                                    layer.msg("添加成功");
+                                    tableIns.reload();
+
+
+                                } else {
+                                    layer.msg("添加失败");
+
+                                }
+
+                               $("#myModalAddUser").modal('hide');
+
+                            },
+                            fail: function (e) {
+                                layer.msg("fail");
+                            },
+                            error: function (e) {
+                                layer.msg("error");
+                            }
+                        })
+
+
+                    }
+                })
+            })
+        })
+
+    });
+
+
+
+</script>
+
+<!--修改密码表单-->
+
+<form class="layui-form  pop" action="" lay-filter=""  style="display: none">
+    <div class="layui-form-item">
+        <label class="layui-form-label" for="upcode" style="width: 80px">工号</label>
+        <div class="layui-input-block">
+            <input type="text" name="upcode" id="upcode" readonly="readonly" autocomplete="off" style="width: 160px" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label" for="uppassword" style="width: 80px">密码</label>
+        <div class="layui-input-block">
+            <input type="password" name="uppassword" id="uppassword" placeholder="请输入密码" lay-verify="required|lengths" style="width: 200px" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label" for="reuppassword" style="width: 80px">确认密码</label>
+        <div class="layui-input-block">
+            <input type="password" name="reuppassword" id="reuppassword" lay-verify="required|confirmPass" placeholder="请输入密码" style="width: 200px" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+
+
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+
+<!--
+            <button type="submit" class="layui-btn" lay-submit="" lay-filter="demo1">立即提交</button>
+-->
+        </div>
+    </div>
+</form>
+
+
+<!--Info Modal -->
+<div class="modal fade" id="myModalAddUser" tabindex="-1" role="dialog"
+     aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"
+                        aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="myModalLabel">添加员工</h4>
+            </div>
+
+            <div class="modal-body">
+                <form class="form-horizontal" id="edit_userInfo">
+                    <div class="form-group">
+                        <label for="edit_username" class="col-sm-2 control-label">帐号</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" id="edit_username"
+                                   placeholder="输入3到12位字符" name="username"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_code" class="col-sm-2 control-label">密码</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" id="edit_password"
+                                   readonly="readonly" placeholder="默认为帐号" name="password" autocomplete />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_code" class="col-sm-2 control-label">工号</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" id="edit_code"
+                                   placeholder="输入五位数字  " name="code"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_Name" class="col-sm-2 control-label">昵称</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" id="edit_name"
+                                   placeholder="输入2到12位的字符  " name="name"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_Name" class="col-sm-2 control-label">性别</label>
+                        <div class="col-sm-6">
+                            <select class="form-control" id="sex">
+                                <option value="1">男</option>
+                                <option value="0">女</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_email" class="col-sm-2 control-label">邮箱</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" id="edit_email"
+                                   placeholder="输入正确的邮箱 " name="email"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_phone" class="col-sm-2 control-label">电话</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" id="edit_phone"
+                                   placeholder="输入正确的手机号" name="phone"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_say" class="col-sm-2 control-label">签名</label>
+                        <div class="col-sm-10">
+								<textarea rows="4" class="form-control"
+                                          id="edit_say" name="say"  placeholder="网络一线牵珍惜这份缘！" ></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default"
+                                data-dismiss="modal">关闭
+                        </button>
+                        <button type="submit" class="btn btn-primary"
+                                id="updateUserInfoBtn">添加
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+
+</body>
+
+
+</html>
